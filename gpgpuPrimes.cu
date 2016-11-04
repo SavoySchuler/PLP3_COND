@@ -154,7 +154,7 @@ __global__ void countPrimes( int *d_primeArray, int arraySize)
 	
 	//Case for odd length arrays. 
 
-	else if ((arraySize % 2) == 1)
+	else
 	{
 
 		/*Perform the same operation as above, but only for elements less than 
@@ -360,7 +360,7 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 	until the sum of the original is stored at d_primeArray[0].
 	*/
 
-	for (int arraySize = n; arraySize > 1; arraySize = arraySize - arraySize/2)
+	for (int arraySize = n; arraySize > 1; arraySize -= arraySize/2)
 	{
 		nBlocks = ( arraySize/2 + nThreads - 1 ) / nThreads;
 		countPrimes<<< nBlocks, nThreads >>>(d_primeArray, arraySize);
