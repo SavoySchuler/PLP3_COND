@@ -225,7 +225,7 @@ __global__ void isPrime( int *d_primeArray, int lowNum, int highNum)
     /*If the thread's calculated number falls within the range of the search, 
     check if that number is prime.*/
     
-    if ( i >= lowNum && i <= highNum )
+    if ( i > 1 && i >= lowNum && i <= highNum )
     {	
     	//Assume i will be prime.
         
