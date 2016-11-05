@@ -25,7 +25,7 @@
  *
  * @par Usage Instructions:
  *		
- *		primes low high
+ *		primes <low> <high>
  *
  * @par Input:
  *
@@ -57,7 +57,7 @@
  * @section todo_bugs_modification_section Todo, Bugs, and Modifications
  *
  * @bugs -	Large search ranges crash the program. Error messages states that 
- *				the system ran out of resources. Test around ~40000.
+ *				the system ran out of resources. Test around ~2100000.
  *
  * @todo -	Find source of crash.
  *

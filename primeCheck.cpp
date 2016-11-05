@@ -1,26 +1,32 @@
 /******************************************************************************
-*	File: primeCheck
+*	File: primeCheck.cpp
 *
-*	Authors: Dr. John Weiss
+*	Authors: Savoy Schuler, Johnathan Westlund
 *
 *	Date: November 2, 2016
 *
 *	Functions Included:
+*				is_prime
+*				sequentialSearch
+*				openmpSearch
+*				asyncSearch
+*				async_fun
 *
+*	Description: This file contains the necessary functions to calculated the
+*				number of primes sequentially, using async, and using openmp.
+*				
+*   Included classes:
+*				<future> -	This is used by the asyncSearch function
+*				<vector> -	This is used by the asyncSearch function
+*				"omp.h"	 -	This is used by the openmpSearch function
+*				"primeCheck.h" - Includes the function definitions for this file
 *			
-*
-*	Description:	
-*		
-*			
-
 *
 ******************************************************************************/
 #include "omp.h"
 #include "primeCheck.h"
 #include <future>
-#include <iostream>
 #include <vector>
-
 
 /******************************************************************************
 * Author: Dr. John Weiss
@@ -63,13 +69,19 @@ bool is_prime( unsigned p )
 
 
 /******************************************************************************
-* Author:		
+* Author: Savoy Schuler, Johnathan Westlund		
 *
-* Function: 	
+* Function: sequentialSearch
 *
-* Description:	
+* Description: This function finds the number of primes in a given interval.
+*				A for loop iterates through the range and calls is_prime for
+*				each number. If the number is prime, and int keeping track of
+*				the total number of primes is incremented. 
 *
 * Parameters:
+*			in:		low - The lower bound of the primes to check
+*			in:		high - The upper bound of the primes to check
+*			out:	primeCount - The total number of primes in the range
 *	
 ******************************************************************************/
 int sequentialSearch(int low, int high)
@@ -88,13 +100,21 @@ int sequentialSearch(int low, int high)
 
 
 /******************************************************************************
-* Author:		
+* Author: Johnathan Westlund, Savoy Schuler		
 *
-* Function: 	
+* Function: openmpSearch
 *
-* Description:	
+* Description: This function calculates the number of primes between high and
+*				low using openmp parallelization. The function gets the number
+*				of processors available on the computer and uses that number of
+*				threads. A for loop is used to cycle from low to high. Omp simply
+*				parallelizes the for loop so each number is tested on a different
+*				thread. 
 *
-* Parameters:
+* Parameters: 
+*			in:		low - The lower bound of the primes to check
+*			in:		high - The upper bound of the primes to check
+*			out:	primeCount - The total number of primes in the range
 *	
 ******************************************************************************/
 int openmpSearch(int low, int high)
@@ -118,20 +138,30 @@ int openmpSearch(int low, int high)
 
 
 /******************************************************************************
-* Author:		
+* Author: Johnathan Westlund, Savoy Schuler		
 *
-* Function: 	
+* Function: asyncSearch
 *
-* Description:	
+* Description: This function find the number of primes in a given interval using
+*				async parallelization. A vector is allocated to store the future
+*				objects and is then filled with a number to check in the given
+*				range. Due to memory limits, if the vector of futures exceeds
+*				20,000, the vector is emptied and the results from each future
+*				thread are gathered. This is repeated until all numbers int the
+*				range are tested. Once the upper limit is reached, the vector
+*				is emptied regardless of size and the results are accumulated and
+*				then returned.
 *
 * Parameters:
+*			in:		low - The lower bound of the primes to check
+*			in:		high - The upper bound of the primes to check
+*			out:	result - The total number of primes in the range
 *	
 ******************************************************************************/
 int asyncSearch(int low, int high)
 {
-	std::vector<std::future<int>> fvec;	
-	//std::future<int> fut;
-	int result = 0;
+	std::vector<std::future<int>> fvec;	//vector to hold future objects
+	int result = 0; 
 	int i = low;
 	
 	while (i <= high)
@@ -160,13 +190,18 @@ int asyncSearch(int low, int high)
 
 
 /******************************************************************************
-* Author:		
+* Author: Johnathan Westlund		
 *
-* Function: 	
+* Function: async_fun
 *
-* Description:	
+* Description:	This is a simple helper function to change is_prime from
+*				returning a bool to and int that can be added up to find the 
+*				total.
 *
 * Parameters:
+*		in:		p - The number being checked to be a prime
+*		out:	1 - The number is prime
+*		out:    0 - The number it not prime
 *	
 ******************************************************************************/
 int async_fun(int p)
