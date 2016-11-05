@@ -91,13 +91,36 @@ int gpuProperties();
 
 
 /******************************************************************************
-* Author:		
+* Author: Savoy Schuler
 *
-* Function: 	
+* Function: main
 *
 * Description:	
 *
+*	This is the main function of the primes program.
+*
+*	In the first segment, the main will perform an error check to make sure 
+*	appropriate run parameters have been input by the user. It will then read in
+*	and convert the command line parameters to be used as upper and lower bounds
+*	for searching for primes in addition to setting up all needed variables for
+*	storing search results and timing/benchmarking.
+*
+*	The second segment calls, times, and stores the results of each test. There
+*	are four search methods used: a sequential search, a parallel search using
+*	async, a parallel search using openmp, and a GPGPU parallel search using 
+*	Cuda and an Nvidia graphics card.
+*
+*	The third segment will output test information and the results of the search
+*	(number of primes found, timing, and speedup relative to sequential search)
+*	to the terminal for the user. 
+*
+*	A successful run of the program terminates by returning 0. 
+*
 * Parameters:
+*
+*	argc	- number of command line parameters
+*
+*	argv	- array of command line parameters
 *	
 ******************************************************************************/
 int main(int argc, char* argv[])
