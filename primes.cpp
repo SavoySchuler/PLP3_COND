@@ -44,11 +44,15 @@
  *
  * @details:	
  * 		
- *		 
- *		
- *		
- *			
- *
+ *		 This program is written as an exercise in concurrency and parallelism 
+ * 		that tests and compares sequential, async (parallel), OpenMP (parallel),
+ * 		and GPGPU methods of determining the primality of a range of integers 
+ * 		using by trial by division.
+ * 
+ *		The program outputs the results of each search to the terminal for the 
+ *		user. The results of each search include number of primes found in th 
+ *		erange, low long the process took (in seconds), and how much speed up 
+ *		was obtained over parallel process.
  *
  * @par Modifications:
  *
@@ -56,10 +60,16 @@
  *
  * @section todo_bugs_modification_section Todo, Bugs, and Modifications
  *
- * @bugs -	Large search ranges crash the program. Error messages states that 
- *				the system ran out of resources. Test around ~2100000.
+ * @bugs 	Large search ranges (~3,000,000) causes the GPGPU search method to 
+ *				not run. The error involves copying the large array size from 
+ *				the host to devices. This could be solved by adding checks in 
+ *				prime search to write 0 in result array locations for 0 and 1, 
+ *				but this would only add an avoidable check for 3,000,000 other 
+ *				numbers or an extra kernal call. Speedup was prefered over being
+ *				able to run number ranges that would already be unreasonable 
+ *				to check due to sequential search.
  *
- * @todo -	Find source of crash.
+ * @todo 	
  *
  *****************************************************************************/
 
