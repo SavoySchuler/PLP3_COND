@@ -136,15 +136,20 @@ int gpuProperties();
 int main(int argc, char* argv[])
 {
 	/*--------------------------------Set Up----------------------------------*/
-
+	if (argc != 3)
+	{
+		cerr << "\nUsage: primes <low> <high>\n\n";
+		return 1;
+	}
     //Read and store command line arguments as integers.
 
     int low = atoi(argv[1]);
     int high = atoi(argv[2]);
 
     //Error catch for input.
+	
     //Allow two, postive integers where the second is greater than the first.
-    if (argc > 3 || low < 0 || high < 0 || high<=low)
+    if (low < 0 || high < 0 || high<=low)
     {
         cerr << "\nPlease request a non-zero, non-negative search range.\n\n";
         return 1;
