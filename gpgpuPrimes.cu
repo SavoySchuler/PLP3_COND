@@ -339,7 +339,7 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
         primeArray[1] = 0;
     }
 
-    else if ( lowNum = 1 ) primeArray[0] = 0;
+    else if ( lowNum == 1 ) primeArray[0] = 0;
 
 
     //Allocate device memory for the device copy of primeArray.
