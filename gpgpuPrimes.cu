@@ -273,10 +273,7 @@ __global__ void isPrime( int *d_primeArray, int lowNum, int highNum)
 *	primes in the search range. Last, the function will free host and device
 *	memory allocations.
 *
-*	Time stamps bound the two kernel calls ensure an accurate representation
-*	GPGPU search runtime for benchmarking.
-*
-*	The memory addresses for holding GPGPU runtime and the number of primes
+*	The memory addresses for holding the number of primes
 *	found are declared in main and passed to functions for updating.
 *
 * Parameters:
@@ -287,11 +284,8 @@ __global__ void isPrime( int *d_primeArray, int lowNum, int highNum)
 *
 *	*gpgpuCount	- Address of location in memory to store number of primes found.
 *
-*	*gpgpuStop	- Address of location in memory to store runtime of gpgpuSearch.
-*
 ******************************************************************************/
-int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
-                 chrono::duration<double> *gpgpuStop )
+int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount )
 {
     /*--------------------------------Set Up----------------------------------*/
 
@@ -299,12 +293,10 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 
     int n = highNum - lowNum+1;
 
-    //Declare chrono variable for tracking run time.
-
-    chrono::duration<double> gpgpuStopIntermediate;
-
-    //Set kernel on GPU with 32 threads per block.
+    //Set up kernels to run on GPU with specified numner of threads per block.
     //Reminder: Threads should be a multiple of 32 up to 1024
+
+	//Best timing found with thread count of:
 
     int nThreads = 1024;
 
@@ -352,13 +344,8 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
     cudaMemcpy( d_primeArray, primeArray, size, cudaMemcpyHostToDevice );
 
 
-
     /*-------------------------GPGPU Prime Search-----------------------------*/
 
-
-    //Start timing for the GPGPU search.
-
-    auto startTime = chrono::system_clock::now();
 
     /* This program uses course grain and fine grain parallelizing techniques.
 
@@ -412,14 +399,6 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
     //Store the sum of primes at the address passed in from main.
 
     *gpgpuCount = primeArray[0];
-
-    //Take another time stamp and subtract the start time to get the run time.
-
-    gpgpuStopIntermediate = chrono::system_clock::now() - startTime;
-
-    //Store the runtime at the respective address passed in from main.
-
-    *gpgpuStop = gpgpuStopIntermediate;
 
 
     /*-----------------------------Clean Up-----------------------------------*/

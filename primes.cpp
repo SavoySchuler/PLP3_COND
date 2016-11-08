@@ -93,8 +93,7 @@ using namespace std;
 /*************************** Function Prototypes *****************************/
 
 //Prototype for GPGPU function - makes Makefile behave.
-int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
-                 chrono::duration<double> *gpgpuStop );
+int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount );
 int gpuProperties();
 
 
@@ -205,7 +204,10 @@ int main(int argc, char* argv[])
 
 
     //Test in parallel using gpgpu. Timing occurs in function.
-    gpgpuSearch(low, high, &gpgpuCount, &gpgpuStop);
+
+	startTime = chrono::system_clock::now();
+    gpgpuSearch(low, high, &gpgpuCount);
+	gpgpuStop = chrono::system_clock::now() - startTime;
 
 
     /*--------------------------------Output----------------------------------*/
