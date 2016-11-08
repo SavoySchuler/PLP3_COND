@@ -95,6 +95,7 @@ int gpuProperties()
 }
 
 
+
 /******************************************************************************
 * Author: Savoy Schuler	
 *
@@ -183,6 +184,7 @@ __global__ void countPrimes( int *d_primeArray, int arraySize)
 }
 
 
+
 /******************************************************************************
 * Author: Savoy Schuler
 *
@@ -191,17 +193,20 @@ __global__ void countPrimes( int *d_primeArray, int arraySize)
 * Description:	
 *
 *	This function allows checking which numbers in a range are prime to be done
-*	in parallel on a GPU.
+*	in parallel on a GPU using fine and course grain parallelizing. 
 *
-*	isPrime is a Cuda kernel that threads each number in a search range to check
-* 	if that number is prime. Each thread has an identiciation number that is 
-* 	used to determine which number that thread is checking. 
+*	isPrime is a Cuda kernel that dedicates each block on a GPU to checking the 
+*	primality of an individual element (course grain parallelizing). 
+*	
+*	Within each block, the allocated threads available are used to check if the 
+*	number is divisible by any numbers between 2 and element/2. If there are 
+*	more divisors to search than threads, the divisors wrap around the threads 
+*	so that each thread checks a set of divisors (this is the element of fine 
+*	grain parallelizing). 
 *
-*	A primality check is performed by checking if a number is divisible by any 
-*	integer between 2 and number/2 (inclusive). The number is initially assumed
-*	to be prime. If any divisors are found, the prime flag is set to false. At 
-*	the end of the search the prime/not prime status of the integer is updated
-*	to the device's results array: d_primeArray.
+*	If any divisors for a number are found, the number's location in the results
+*	array (d_primeArray) is set to 0 to indicate that it was found to be not 
+*	prime. Any elements still set to 1 by the end of the search are prime.  
 *
 * Parameters:
 *
@@ -217,26 +222,38 @@ __global__ void countPrimes( int *d_primeArray, int arraySize)
 ******************************************************************************/
 __global__ void isPrime( int *d_primeArray, int lowNum, int highNum)  
 {
+	
+	//Dedicate the block to checking one number in the search range.
 
 	int i = blockIdx.x + lowNum;
     
+    /* Dedicate each thread to checking one possible divisor of the integer 
+    being examined by the block. */
+    
     int divisor = threadIdx.x + 2;
     
+    /*Wrap the divisors to check around the number of threads until the possible
+     divisors (from 2 to element/2) have been checked. */
    
     for (int div = divisor ; div <= i/2 ; div = div + blockDim.x)
   	{
 		
+		//If the divisor evenly divides the element being checked...
 			
 		if ( i % div == 0 )
 		{
 		
+			/*Set that element's result in the results array to 0 to indicate 
+			that is has been found to be not prime.*/
+		
 			d_primeArray[i-lowNum] = 0;
-			break;
 
 		}
+		
 	}
+	
+	//End thread. 
 }
-
 
 
 
@@ -289,7 +306,7 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
     //Set kernel on GPU with 32 threads per block. 
 	//Reminder: Threads should be a multiple of 32 up to 1024 
 
-    int nThreads = 32;                    
+    int nThreads = 1024;                    
 	
 	/*Set the the number of blocks so that nThreads*nBlocks is greater than but
 	as close to n as possible (while still being a multiple of 32). This 
@@ -341,28 +358,37 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 
     auto startTime = chrono::system_clock::now();
 	
-	/*Call the kernel isPrime to thread searching each number in the checking 
-	range. If a number is found to be prime, its representative index on the 
-	device copy of primeArray will be set to 1.*/
+	/* This program uses course grain and fine grain parallelizing techniques.
+	
+	For the search, each number in the search range gets its own dedicated block
+	for searching (this is the course grain parallelizing). Within each block,
+	the allocated threads available are used to check if the number is divisible
+	by any numbers between 2 and element/2. If there are more divisors to search
+	than threads, the divisors wrap around the threads so that each thread 
+	checks a set of divisors (this is the element of fine grain parallelizing). 
+	If any divisors for a number are found, the number's location in the results
+	array (d_primeArray) is set to 0 to indicate that it was found to be not 
+	prime. Any elements still set to 1 by the end of the search are prime.  */
 
     isPrime<<< n, nThreads >>>(d_primeArray, lowNum, highNum);
     
-    // waits for completion, returns error code
+    
+    //Wait for kernel completion before proceeding.
     
     cudaError_t cudaerror = cudaDeviceSynchronize();  
 
-	/*The number of primes found must be counted. This is accomplished in 
+	/* The number of primes found must be counted. This is accomplished in 
 	parallel by using a for loop around the countPrimes kernel. This for loop 
-	will pass the working size of the d_primesArray to device and the kernel 
+	will pass the working size of the results array to the device and the kernel 
 	will generate a thread for each number in the first half of the array. These
 	threads are used to add the contents of their index in the first half of 
-	d_primeArray to the contents of the threads respective index in the second 
-	half of d_PrimeArray and storing the result in the original index in the 
+	d_primeArray to the contents of the thread's respective index in the second 
+	half of d_PrimeArray, storing the result in the original index in the 
 	first half of the array. 
 
 	At each iteration, the for loop with half the working size of the array 
-	until the sum of the original is stored at d_primeArray[0].
-	*/
+	until the sum of the original is stored in the first element (the [0] 
+	index.) */
 
 	
 	for (int arraySize = n; arraySize > 1; arraySize -= arraySize/2)
@@ -370,15 +396,16 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 		nBlocks = ( arraySize/2 + nThreads - 1 ) / nThreads;
 		countPrimes<<< nBlocks, nThreads >>>(d_primeArray, arraySize);
 		
-		 // waits for completion, returns error code
-    
+		//Wait for kernel completion before proceeding.
+   
     	cudaError_t cudaerror = cudaDeviceSynchronize(); 
 	}	
 	
                            
-    //Copy primeArray back to the host to retrieve the sum of primes found. 
+    /*Copy the first element of the results array back to the host to retrieve 
+    the count of primes. */
     
-	cudaMemcpy( primeArray, d_primeArray, size, cudaMemcpyDeviceToHost );
+	cudaMemcpy( primeArray, d_primeArray, sizeof(int), cudaMemcpyDeviceToHost );
 
 	//Store the sum of primes at the address passed in from main.
 
