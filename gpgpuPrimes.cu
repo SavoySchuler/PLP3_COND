@@ -217,36 +217,27 @@ __global__ void countPrimes( int *d_primeArray, int arraySize)
 ******************************************************************************/
 __global__ void isPrime( int *d_primeArray, int lowNum, int highNum)  
 {
-	
-	//Index a thread's ID number and offset it by the lower bound of the search.
+
+	int i = blockIdx.x + lowNum;
     
-    int i = threadIdx.x + blockIdx.x * blockDim.x + lowNum;
+    int divisor = threadIdx.x + 2;
     
-    /*If the thread's calculated number falls within the range of the search, 
-    check if that number is prime.*/
-    
-    if ( i > 1 && i >= lowNum && i <= highNum )
-    {	
-    	//Assume i will be prime.
-        
-		bool prime = 1;
-	
-		//Check if i is divisible by any number between 2 and half of i's value.
+   
+    for (int div = divisor ; div <= i/2 ; div = div + blockDim.x)
+  	{
 		
-		for ( unsigned f = 2; f <= i / 2 ; ++f )
 			
-			//If i is divisible by any of these numbers, set prime = false/
-			
-			if ( i % f == 0 ) prime = 0;
-			
-		//Update i's prime/non-prime status in the results array.	
-			
-		d_primeArray[i-lowNum] = prime;
-	}  		 
-	
-	//Terminate thread. 
+		if ( i % div == 0 )
+		{
 		
+			d_primeArray[i-lowNum] = 0;
+			break;
+
+		}
+	}
 }
+
+
 
 
 /******************************************************************************
@@ -319,8 +310,18 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
     //Fill the array with zeros as no primes have been found.
 
     for ( int i = 0; i < n; i++ )
-        primeArray[i] = 0;
-
+        primeArray[i] = 1;
+       
+    if ( lowNum == 0 )
+    {
+    	primeArray[0] = 0;
+    	primeArray[1] = 0;
+    }
+    
+    else if ( lowNum < 2 )
+    {
+    	primeArray[0] = 0;
+	}
 
     //Allocate device memory for the device copy of primeArray.
 
@@ -344,8 +345,11 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 	range. If a number is found to be prime, its representative index on the 
 	device copy of primeArray will be set to 1.*/
 
-    isPrime<<< nBlocks, nThreads >>>(d_primeArray, lowNum, highNum);
-
+    isPrime<<< n, nThreads >>>(d_primeArray, lowNum, highNum);
+    
+    // waits for completion, returns error code
+    
+    cudaError_t cudaerror = cudaDeviceSynchronize();  
 
 	/*The number of primes found must be counted. This is accomplished in 
 	parallel by using a for loop around the countPrimes kernel. This for loop 
@@ -360,12 +364,17 @@ int gpgpuSearch( int lowNum, int highNum, int *gpgpuCount,
 	until the sum of the original is stored at d_primeArray[0].
 	*/
 
+	
 	for (int arraySize = n; arraySize > 1; arraySize -= arraySize/2)
 	{
 		nBlocks = ( arraySize/2 + nThreads - 1 ) / nThreads;
 		countPrimes<<< nBlocks, nThreads >>>(d_primeArray, arraySize);
+		
+		 // waits for completion, returns error code
+    
+    	cudaError_t cudaerror = cudaDeviceSynchronize(); 
 	}	
-
+	
                            
     //Copy primeArray back to the host to retrieve the sum of primes found. 
     
