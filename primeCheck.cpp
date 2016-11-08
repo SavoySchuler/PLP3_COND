@@ -144,7 +144,8 @@ int openmpSearch(int low, int high)
 
     //Use OpenMP to parallelize for loop with number of threads available.
 
-    #pragma omp parallel for num_threads(threadCount) \ reduction(+: primeCount)
+	#pragma omp parallel for num_threads(threadCount) \
+			reduction(+: primeCount)
 
     //Search range (low to high) for primes using threads.
 
